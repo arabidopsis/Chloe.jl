@@ -147,7 +147,7 @@ function transform!(
         if ~isnothing(ndhFidx)
             ndhF = result.annotation.forward[ndhFidx].features[1].feature
             target, result = rotate!(target, result, ndhF.start + ndhF.length)
-            rotated += ndhF.start + ndhF.length
+            rotated += ndhF.start + ndhF.length - 1
             
         end
         ## rotate nuclear rDNA repeats to start with 18S rRNA gene
@@ -155,7 +155,7 @@ function transform!(
         if ~isnothing(rrn18idx)
             fstart = result.annotation.forward[rrn18idx].features[1].feature.start
             target, result = rotate!(target, result, fstart)
-            rotated += fstart
+            rotated += fstart - 1
         end
         if rotated != 0
             ts *= "r[$(rotated)]"
@@ -166,12 +166,19 @@ function transform!(
             filter(x -> length(circularintersect(gene_span(x), IRa_range, gl)) > 0, result.annotation.forward)
         if check_orientation(IRa_annotations, refstrands)
             # IRa is in correct orientation, so rotate to start from the nucleotide following IRb; no flip required
-            target, result = rotate!(target, result, gl - IRb_range.start + 2)
-            ts *= "r[$(gl - IRb_range.start + 2)]"
+            nstart = gl - IRb_range.start + 2
+            target, result = rotate!(target, result, nstart)
+            
+            if nstart != 1
+                ts *= "r[$(nstart - 1)]"
+            end
         else
             # IRb is in correct orientation, so rotate to end of IRa, then flip the IR annotations
-            target, result = rotate!(target, result, IRa_range.stop + 1)
-            ts *= "r[$(IRa_range.stop + 1)]"
+            nstart = IRa_range.stop + 1
+            target, result = rotate!(target, result, nstart)
+            if nstart !=  1
+                ts *= "r[$(nstart - 1)]"
+            end
             #flip IR annotations
             IRa_feature =
                 first(
@@ -190,7 +197,7 @@ function transform!(
             tmp = IRa_feature.start
             IRa_feature.start = rc(IRb_feature.start + IRb_feature.length - 1, gl)
             IRb_feature.start = rc(tmp + IRa_feature.length - 1, gl)
-            ts *= "xab"
+            ts *= "x"
         end
         # reload ranges as they may have altered
         IRa_range = IR_range(result.annotation.forward)
@@ -201,8 +208,9 @@ function transform!(
             filter(x -> length(circularintersect(gene_span(x), LSC_range, gl)) > 0, result.annotation.forward)
         if ~check_orientation(LSC_annotations, refstrands)
             if length(LSC_range) >= 1
+                isfull = result.target_length == length(LSC_range)
+                ts *= isfull ? "-" : "f[$(LSC_range)]"
                 target, result = flip!(target, result, LSC_range)
-                ts *= "f[$(LSC_range)]"
             end
         end
         # orient SSC to maximise strand agreement with the templates
@@ -211,8 +219,9 @@ function transform!(
             filter(x -> length(circularintersect(gene_span(x), SSC_range, gl)) > 0, result.annotation.forward)
         if ~check_orientation(SSC_annotations, refstrands)
             if length(SSC_range) >= 1
+                isfull = result.target_length == length(SSC_range)
+                ts *= isfull ? "-" : "f[$(SSC_range)]"
                 target, result = flip!(target, result, SSC_range)
-                ts *= "f[$(SSC_range)]"
             end
         end
         #rename IRs?
