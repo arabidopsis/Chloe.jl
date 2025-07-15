@@ -560,7 +560,11 @@ function annotate_one(
     config = isnothing(config) ? ChloeConfig() : config
     result = annotate_one_worker(db, target_id, target, config)
     if ~config.no_transform
-        target, result = transform!(target, result, db.templates)
+        target, result, ts = transform!(target, result, db.templates)
+        if ts != ""
+            @info crayon"bold magenta"("[$(target_id)] transformed: $(ts)")
+        end
+
     end
     write_result(config, target, result, output)
 end
