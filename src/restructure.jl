@@ -148,7 +148,6 @@ function transform!(
             ndhF = result.annotation.forward[ndhFidx].features[1].feature
             target, result = rotate!(target, result, ndhF.start + ndhF.length)
             rotated += ndhF.start + ndhF.length - 1
-            
         end
         ## rotate nuclear rDNA repeats to start with 18S rRNA gene
         rrn18idx = findfirst(x -> x.gene == "18SRRNA", result.annotation.forward)
@@ -168,7 +167,6 @@ function transform!(
             # IRa is in correct orientation, so rotate to start from the nucleotide following IRb; no flip required
             nstart = gl - IRb_range.start + 2
             target, result = rotate!(target, result, nstart)
-            
             if nstart != 1
                 ts *= "r[$(nstart - 1)]"
             end
